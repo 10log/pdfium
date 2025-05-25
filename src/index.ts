@@ -16,6 +16,10 @@ export type {
   PDFiumTextCharacterFont,
   PDFiumPageLabel,
 } from "./page.types.js";
+export type {
+  PDFiumDocumentMetadata,
+  PDFiumMetadataTagName,
+} from "./document.types.js";
 export {
   PDFiumObjectType,
   PDFiumImageObjectRenderParams,
@@ -32,4 +36,4 @@ export {
   PDFiumFormObject,
   PDFiumObject,
 } from "./objects.js";
-export { FPDFPathSegmentType } from "./constants.js";
+export { FPDFPathSegmentType, FPDFMetadataTag } from "./constants.js";

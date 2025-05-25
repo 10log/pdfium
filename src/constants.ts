@@ -69,3 +69,14 @@ export const FPDFPathSegmentType = {
   BEZIERTO: 1,
   MOVETO: 2,
 };
+
+export const FPDFMetadataTag = {
+  TITLE: "Title",
+  AUTHOR: "Author", 
+  SUBJECT: "Subject",
+  KEYWORDS: "Keywords",
+  CREATOR: "Creator",
+  PRODUCER: "Producer",
+  CREATION_DATE: "CreationDate",
+  MODIFIED_DATE: "ModDate",
+} as const;

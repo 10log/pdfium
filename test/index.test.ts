@@ -718,4 +718,154 @@ describe("PDFium", () => {
       }
     });
   });
+
+  describe("PDFiumDocumentMetadata", () => {
+    test("should extract metadata from documents", async () => {
+      await loadDocument("test_1.pdf", async (document) => {
+        const metadata = document.getMetadata();
+        
+        expect(metadata).toBeDefined();
+        expect(typeof metadata).toBe('object');
+        
+        // Metadata properties should be strings or undefined
+        if (metadata.title !== undefined) {
+          expect(typeof metadata.title).toBe('string');
+        }
+        if (metadata.author !== undefined) {
+          expect(typeof metadata.author).toBe('string');
+        }
+        if (metadata.subject !== undefined) {
+          expect(typeof metadata.subject).toBe('string');
+        }
+        if (metadata.keywords !== undefined) {
+          expect(typeof metadata.keywords).toBe('string');
+        }
+        if (metadata.creator !== undefined) {
+          expect(typeof metadata.creator).toBe('string');
+        }
+        if (metadata.producer !== undefined) {
+          expect(typeof metadata.producer).toBe('string');
+        }
+        if (metadata.creationDate !== undefined) {
+          expect(typeof metadata.creationDate).toBe('string');
+        }
+        if (metadata.modifiedDate !== undefined) {
+          expect(typeof metadata.modifiedDate).toBe('string');
+        }
+      });
+    });
+
+    test("should extract individual metadata tags", async () => {
+      await loadDocument("test_1.pdf", async (document) => {
+        // Test individual metadata extraction
+        const title = document.getMetadataTag("Title");
+        const author = document.getMetadataTag("Author");
+        const subject = document.getMetadataTag("Subject");
+        const keywords = document.getMetadataTag("Keywords");
+        const creator = document.getMetadataTag("Creator");
+        const producer = document.getMetadataTag("Producer");
+        const creationDate = document.getMetadataTag("CreationDate");
+        const modifiedDate = document.getMetadataTag("ModDate");
+        
+        // Each should be either a string or undefined
+        if (title !== undefined) expect(typeof title).toBe('string');
+        if (author !== undefined) expect(typeof author).toBe('string');
+        if (subject !== undefined) expect(typeof subject).toBe('string');
+        if (keywords !== undefined) expect(typeof keywords).toBe('string');
+        if (creator !== undefined) expect(typeof creator).toBe('string');
+        if (producer !== undefined) expect(typeof producer).toBe('string');
+        if (creationDate !== undefined) expect(typeof creationDate).toBe('string');
+        if (modifiedDate !== undefined) expect(typeof modifiedDate).toBe('string');
+      });
+    });
+
+    test("should return consistent results between getMetadata() and getMetadataTag()", async () => {
+      await loadDocument("test_1.pdf", async (document) => {
+        const metadata = document.getMetadata();
+        
+        // Compare individual tag results with getMetadata() results
+        expect(document.getMetadataTag("Title")).toBe(metadata.title);
+        expect(document.getMetadataTag("Author")).toBe(metadata.author);
+        expect(document.getMetadataTag("Subject")).toBe(metadata.subject);
+        expect(document.getMetadataTag("Keywords")).toBe(metadata.keywords);
+        expect(document.getMetadataTag("Creator")).toBe(metadata.creator);
+        expect(document.getMetadataTag("Producer")).toBe(metadata.producer);
+        expect(document.getMetadataTag("CreationDate")).toBe(metadata.creationDate);
+        expect(document.getMetadataTag("ModDate")).toBe(metadata.modifiedDate);
+      });
+    });
+
+    test("should handle multiple calls consistently", async () => {
+      await loadDocument("test_1.pdf", async (document) => {
+        // Call getMetadata multiple times to ensure consistency
+        const metadata1 = document.getMetadata();
+        const metadata2 = document.getMetadata();
+        const metadata3 = document.getMetadata();
+        
+        expect(metadata1).toEqual(metadata2);
+        expect(metadata2).toEqual(metadata3);
+        
+        // Test individual tag consistency
+        expect(document.getMetadataTag("Title")).toBe(document.getMetadataTag("Title"));
+        expect(document.getMetadataTag("Producer")).toBe(document.getMetadataTag("Producer"));
+      });
+    });
+
+    test("should work with different PDF documents", async () => {
+      const testFiles = ["test_1.pdf", "test_3_with_images.pdf"];
+      
+      for (const filename of testFiles) {
+        await loadDocument(filename, async (document) => {
+          const metadata = document.getMetadata();
+          
+          expect(metadata).toBeDefined();
+          expect(typeof metadata).toBe('object');
+          
+          // Should not throw errors even if metadata is empty
+          expect(() => document.getMetadataTag("Title")).not.toThrow();
+          expect(() => document.getMetadataTag("Author")).not.toThrow();
+          expect(() => document.getMetadataTag("Producer")).not.toThrow();
+        });
+      }
+    });
+
+    test("should handle documents with no metadata gracefully", async () => {
+      await loadDocument("test_1.pdf", async (document) => {
+        const metadata = document.getMetadata();
+        
+        // Should return an object even if no metadata is present
+        expect(metadata).toBeDefined();
+        expect(typeof metadata).toBe('object');
+        
+        // All properties should be either string or undefined
+        Object.values(metadata).forEach(value => {
+          if (value !== undefined) {
+            expect(typeof value).toBe('string');
+          }
+        });
+      });
+    });
+
+    test("should handle edge cases with metadata tags", async () => {
+      await loadDocument("test_1.pdf", async (document) => {
+        // Test with all supported metadata tags using constants
+        const tags = [
+          "Title", "Author", "Subject", "Keywords", 
+          "Creator", "Producer", "CreationDate", "ModDate"
+        ] as const;
+        
+        for (const tag of tags) {
+          const result = document.getMetadataTag(tag);
+          if (result !== undefined) {
+            expect(typeof result).toBe('string');
+            // Should not be just whitespace if defined
+            if (result.trim() === '') {
+              // Empty strings are valid metadata values
+              expect(result).toBe('');
+            }
+          }
+        }
+      });
+    });
+  });
 });
