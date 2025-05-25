@@ -23,7 +23,7 @@ export interface PDFiumDocumentMetadata {
 /**
  * Type representing valid PDF metadata tag names.
  */
-export type PDFiumMetadataTagName = 
+export type PDFiumMetadataTagName =
   | "Title"
   | "Author"
   | "Subject"

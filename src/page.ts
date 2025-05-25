@@ -2,7 +2,14 @@ import type * as t from "./vendor/pdfium.js";
 
 import { BYTES_PER_PIXEL, FPDFBitmap, FPDFRenderFlag } from "./constants.js";
 import { type PDFiumObject, PDFiumObjectBase } from "./objects.js";
-import type { PDFiumPageRender, PDFiumPageRenderParams, PDFiumEnhancedTextExtraction, PDFiumTextCharacter, PDFiumPageLabel } from "./page.types.js";
+import { OCGInfo } from "./ocg.js";
+import type {
+  PDFiumEnhancedTextExtraction,
+  PDFiumPageLabel,
+  PDFiumPageRender,
+  PDFiumPageRenderParams,
+  PDFiumTextCharacter,
+} from "./page.types.js";
 import type { PDFiumRenderFunction, PDFiumRenderOptions } from "./types.js";
 import { convertBitmapToImage } from "./utils.js";
 
@@ -127,7 +134,7 @@ export class PDFiumPage {
   getLabel(): PDFiumPageLabel {
     // First call to get the required buffer size
     const requiredSize = this.module._FPDF_GetPageLabel(this.documentIdx, this.number, 0, 0);
-    
+
     if (requiredSize <= 0) {
       return {
         label: "",
@@ -137,10 +144,10 @@ export class PDFiumPage {
 
     // Allocate buffer for the label (size includes null terminator)
     const bufferPtr = this.module.wasmExports.malloc(requiredSize);
-    
+
     try {
       const actualSize = this.module._FPDF_GetPageLabel(this.documentIdx, this.number, bufferPtr, requiredSize);
-      
+
       if (actualSize <= 0) {
         return {
           label: "",
@@ -150,7 +157,7 @@ export class PDFiumPage {
 
       // Page labels are returned in UTF-16LE format
       // Subtract 2 from actualSize to exclude null terminator (2 bytes for UTF-16LE)
-      const buffer = new Uint8Array(this.module.HEAPU8.buffer, bufferPtr, (actualSize - 2));
+      const buffer = new Uint8Array(this.module.HEAPU8.buffer, bufferPtr, actualSize - 2);
       const label = new TextDecoder("utf-16le").decode(buffer);
 
       return {
@@ -215,16 +222,16 @@ export class PDFiumPage {
     // Get font information
     const fontSize = this.module._FPDFText_GetFontSize(textPage, index);
     const fontWeight = this.module._FPDFText_GetFontWeight(textPage, index);
-    
+
     // Get font name
     const flagsPtr = this.module.wasmExports.malloc(4);
     let fontName = "";
     let fontFlags = 0;
-    
+
     try {
       // First call to get the required buffer size
       const nameLength = this.module._FPDFText_GetFontInfo(textPage, index, 0, 0, flagsPtr);
-      
+
       if (nameLength > 0) {
         const namePtr = this.module.wasmExports.malloc(nameLength);
         try {
@@ -397,5 +404,53 @@ export class PDFiumPage {
     for (let i = 0; i < objectsCount; i++) {
       yield this.getObject(i);
     }
+  }
+
+  /**
+   * Get the number of OCGs (Optional Content Groups) on this page
+   */
+  getPageOCGCount(): number {
+    try {
+      return this.module._FPDF_GetPageOCGCount ? this.module._FPDF_GetPageOCGCount(this.pageIdx) : 0;
+    } catch (error) {
+      console.warn("Page OCG API not available in this PDFium build:", error);
+      return 0;
+    }
+  }
+
+  /**
+   * Get an OCG handle from this page by index
+   */
+  getPageOCG(index: number): number {
+    try {
+      return this.module._FPDF_GetPageOCG ? this.module._FPDF_GetPageOCG(this.pageIdx, index) : 0;
+    } catch (error) {
+      console.warn("Page OCG API not available in this PDFium build:", error);
+      return 0;
+    }
+  }
+
+  /**
+   * Get all OCG handles that are referenced on this page
+   */
+  getPageOCGs(): number[] {
+    const count = this.getPageOCGCount();
+    const ocgs: number[] = [];
+
+    for (let i = 0; i < count; i++) {
+      const ocg = this.getPageOCG(i);
+      if (ocg) {
+        ocgs.push(ocg);
+      }
+    }
+
+    return ocgs;
+  }
+
+  /**
+   * Check if this page has any OCGs (layers)
+   */
+  hasOCGs(): boolean {
+    return this.getPageOCGCount() > 0;
   }
 }

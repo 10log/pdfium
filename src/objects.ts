@@ -74,7 +74,6 @@ export class PDFiumPathObject extends PDFiumObjectBase {
         return "bezierto";
       case FPDFPathSegmentType.MOVETO:
         return "moveto";
-      case FPDFPathSegmentType.UNKNOWN:
       default:
         return "unknown";
     }
@@ -124,7 +123,7 @@ export class PDFiumPathObject extends PDFiumObjectBase {
 
     // Get segment type
     const type = this.module._FPDFPathSegment_GetType(segmentIdx);
-    
+
     // Check if segment closes the subpath
     const close = this.module._FPDFPathSegment_GetClose(segmentIdx) !== 0;
 

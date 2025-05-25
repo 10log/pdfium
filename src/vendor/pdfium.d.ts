@@ -28,7 +28,14 @@ export declare type PDFium = {
   _FPDFText_GetFillColor: (textPage: number, index: number, R: number, G: number, B: number, A: number) => number;
   _FPDFText_GetStrokeColor: (textPage: number, index: number, R: number, G: number, B: number, A: number) => number;
   _FPDFText_GetCharAngle: (textPage: number, index: number) => number;
-  _FPDFText_GetCharBox: (textPage: number, index: number, left: number, right: number, bottom: number, top: number) => number;
+  _FPDFText_GetCharBox: (
+    textPage: number,
+    index: number,
+    left: number,
+    right: number,
+    bottom: number,
+    top: number,
+  ) => number;
   _FPDFText_GetCharOrigin: (textPage: number, index: number, x: number, y: number) => number;
   _FPDFText_IsGenerated: (textPage: number, index: number) => number;
   _FPDFText_IsHyphen: (textPage: number, index: number) => number;
@@ -73,6 +80,25 @@ export declare type PDFium = {
   _FPDFPathSegment_GetPoint: (segment: number, x: number, y: number) => number;
   _FPDFPathSegment_GetType: (segment: number) => number;
   _FPDFPathSegment_GetClose: (segment: number) => number;
+
+  // OCG (Optional Content Groups) APIs
+  _FPDF_GetOCGCount: (document: number) => number;
+  _FPDF_GetOCG: (document: number, index: number) => number;
+  _FPDF_GetOCGName: (ocg: number, buffer: number, buflen: number) => number;
+  _FPDF_GetOCGUsage: (ocg: number) => number;
+  _FPDF_SetOCGState: (document: number, ocg: number, state: number) => number;
+  _FPDF_GetOCGState: (document: number, ocg: number) => number;
+  _FPDF_CreateOCGContext: (document: number, usage: number) => number;
+  _FPDF_DestroyOCGContext: (context: number) => void;
+  _FPDF_SetOCGContextState: (context: number, ocg: number, state: number) => void;
+  _FPDF_GetOCGContextState: (context: number, ocg: number) => number;
+  _FPDF_CheckPageObjectVisible: (context: number, page_object: number) => number;
+  _FPDF_GetPageOCGCount: (page: number) => number;
+  _FPDF_GetPageOCG: (page: number, index: number) => number;
+  _FPDF_IsOCGInDefaultConfig: (document: number, ocg: number) => number;
+  _FPDF_GetOCGOrder: (document: number, buffer: number, buflen: number) => number;
+  _FPDF_GetOCGRadioButtonGroups: (document: number, buffer: number, buflen: number) => number;
+  _FPDF_GetOCGIntent: (ocg: number, buffer: number, buflen: number) => number;
 
   wasmExports: {
     malloc: (size: number) => number;

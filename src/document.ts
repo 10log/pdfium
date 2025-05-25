@@ -1,6 +1,7 @@
-import type * as t from "./vendor/pdfium.js";
 import { FPDFMetadataTag } from "./constants.js";
 import type { PDFiumDocumentMetadata, PDFiumMetadataTagName } from "./document.types.js";
+import { OCGManager } from "./ocg.js";
+import type * as t from "./vendor/pdfium.js";
 
 import { PDFiumPage } from "./page.js";
 
@@ -12,6 +13,9 @@ export class PDFiumDocument {
 
   // Pointer to the document in the WASM memory to free it later
   private readonly documentPtr: number;
+
+  // OCG manager instance
+  private _ocgManager?: OCGManager;
 
   constructor(options: {
     module: t.PDFium;
@@ -54,6 +58,24 @@ export class PDFiumDocument {
   }
 
   /**
+   * Get the OCG (Optional Content Groups) manager for this document.
+   * OCGs allow you to control the visibility of layers in PDF documents.
+   */
+  getOCGManager(): OCGManager {
+    if (!this._ocgManager) {
+      this._ocgManager = new OCGManager(this.module, this.documentIdx);
+    }
+    return this._ocgManager;
+  }
+
+  /**
+   * Check if the document has any OCGs (layers)
+   */
+  hasOCGs(): boolean {
+    return this.getOCGManager().getOCGCount() > 0;
+  }
+
+  /**
    * Get metadata for a specific tag from the document.
    * @param tag The metadata tag name to retrieve
    * @returns The metadata value as a string, or undefined if not found
@@ -61,14 +83,14 @@ export class PDFiumDocument {
   getMetadataTag(tag: PDFiumMetadataTagName): string | undefined {
     // Convert the tag string to a C string pointer
     const tagCString = this.stringToCString(tag);
-    
+
     try {
       // First call to get the required buffer length
       const requiredLength = this.module._FPDF_GetMetaText(
         this.documentIdx,
         tagCString,
         0, // null buffer to get length
-        0  // buffer length 0
+        0, // buffer length 0
       );
 
       if (requiredLength <= 2) {
@@ -78,32 +100,23 @@ export class PDFiumDocument {
 
       // Allocate buffer for the metadata text
       const bufferPtr = this.module.wasmExports.malloc(requiredLength);
-      
+
       try {
         // Second call to get the actual metadata
-        const actualLength = this.module._FPDF_GetMetaText(
-          this.documentIdx,
-          tagCString,
-          bufferPtr,
-          requiredLength
-        );
+        const actualLength = this.module._FPDF_GetMetaText(this.documentIdx, tagCString, bufferPtr, requiredLength);
 
         if (actualLength > 2) {
           // Convert the UTF-16LE buffer to JavaScript string
-          const buffer = new Uint8Array(
-            this.module.HEAPU8.buffer,
-            bufferPtr,
-            actualLength
-          );
-          
+          const buffer = new Uint8Array(this.module.HEAPU8.buffer, bufferPtr, actualLength);
+
           // PDFium returns UTF-16LE encoded strings
-          const decoder = new TextDecoder('utf-16le');
+          const decoder = new TextDecoder("utf-16le");
           const text = decoder.decode(buffer);
-          
+
           // Remove null terminator and return
-          return text.replace(/\0/g, '').trim();
+          return text.replace(/\0/g, "").trim();
         }
-        
+
         return undefined;
       } finally {
         this.module.wasmExports.free(bufferPtr);
@@ -119,32 +132,32 @@ export class PDFiumDocument {
    */
   getMetadata(): PDFiumDocumentMetadata {
     const metadata: PDFiumDocumentMetadata = {};
-    
+
     // Extract each metadata field
     const title = this.getMetadataTag(FPDFMetadataTag.TITLE);
     if (title) metadata.title = title;
-    
+
     const author = this.getMetadataTag(FPDFMetadataTag.AUTHOR);
     if (author) metadata.author = author;
-    
+
     const subject = this.getMetadataTag(FPDFMetadataTag.SUBJECT);
     if (subject) metadata.subject = subject;
-    
+
     const keywords = this.getMetadataTag(FPDFMetadataTag.KEYWORDS);
     if (keywords) metadata.keywords = keywords;
-    
+
     const creator = this.getMetadataTag(FPDFMetadataTag.CREATOR);
     if (creator) metadata.creator = creator;
-    
+
     const producer = this.getMetadataTag(FPDFMetadataTag.PRODUCER);
     if (producer) metadata.producer = producer;
-    
+
     const creationDate = this.getMetadataTag(FPDFMetadataTag.CREATION_DATE);
     if (creationDate) metadata.creationDate = creationDate;
-    
+
     const modifiedDate = this.getMetadataTag(FPDFMetadataTag.MODIFIED_DATE);
     if (modifiedDate) metadata.modifiedDate = modifiedDate;
-    
+
     return metadata;
   }
 
@@ -155,7 +168,7 @@ export class PDFiumDocument {
    */
   private stringToCString(str: string): number {
     const encoder = new TextEncoder();
-    const bytes = encoder.encode(str + '\0'); // Add null terminator
+    const bytes = encoder.encode(`${str}\0`); // Add null terminator
     const ptr = this.module.wasmExports.malloc(bytes.length);
     const memory = new Uint8Array(this.module.HEAPU8.buffer, ptr, bytes.length);
     memory.set(bytes);

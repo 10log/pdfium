@@ -72,7 +72,7 @@ export const FPDFPathSegmentType = {
 
 export const FPDFMetadataTag = {
   TITLE: "Title",
-  AUTHOR: "Author", 
+  AUTHOR: "Author",
   SUBJECT: "Subject",
   KEYWORDS: "Keywords",
   CREATOR: "Creator",
@@ -80,3 +80,21 @@ export const FPDFMetadataTag = {
   CREATION_DATE: "CreationDate",
   MODIFIED_DATE: "ModDate",
 } as const;
+
+export const FPDF_COLORSCHEME_COUNT = 2;
+
+// OCG (Optional Content Groups) constants
+export const FPDF_OCG_STATE_ON = 1;
+export const FPDF_OCG_STATE_OFF = 0;
+export const FPDF_OCG_STATE_UNCHANGED = -1;
+
+// OCG Usage types
+export const FPDF_OCG_USAGE_VIEW = 0;
+export const FPDF_OCG_USAGE_DESIGN = 1;
+export const FPDF_OCG_USAGE_PRINT = 2;
+export const FPDF_OCG_USAGE_EXPORT = 3;
+
+// OCG Intent types
+export const FPDF_OCG_INTENT_VIEW = "View";
+export const FPDF_OCG_INTENT_DESIGN = "Design";
+export const FPDF_OCG_INTENT_ALL = "All";

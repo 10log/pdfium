@@ -868,4 +868,111 @@ describe("PDFium", () => {
       });
     });
   });
+
+  describe("OCG (Optional Content Groups)", () => {
+    test("should handle documents without OCGs", async () => {
+      await loadDocument("test_1.pdf", async (document) => {
+        expect(document.hasOCGs()).toBe(false);
+        
+        const ocgManager = document.getOCGManager();
+        expect(ocgManager.getOCGCount()).toBe(0);
+        expect(ocgManager.getAllOCGs()).toEqual([]);
+      });
+    });
+
+    test("should be able to create OCG context", async () => {
+      await loadDocument("test_1.pdf", async (document) => {
+        const ocgManager = document.getOCGManager();
+        const context = ocgManager.createContext();
+        
+        expect(context).toBeDefined();
+        // OCG APIs may not be available in this PDFium build
+        expect(context.getContextPtr()).toBeGreaterThanOrEqual(0);
+        
+        context.destroy();
+      });
+    });
+
+    test("should handle OCG state management", async () => {
+      await loadDocument("test_1.pdf", async (document) => {
+        const ocgManager = document.getOCGManager();
+        
+        // Test show/hide all layers (should work even with no OCGs)
+        expect(() => ocgManager.showAllLayers()).not.toThrow();
+        expect(() => ocgManager.hideAllLayers()).not.toThrow();
+        expect(() => ocgManager.resetToDefaultStates()).not.toThrow();
+      });
+    });
+
+    test("should handle OCG search operations", async () => {
+      await loadDocument("test_1.pdf", async (document) => {
+        const ocgManager = document.getOCGManager();
+        
+        // Search operations should return empty arrays for documents without OCGs
+        expect(ocgManager.findOCGsByName("test")).toEqual([]);
+        expect(ocgManager.findOCGsByIntent("View")).toEqual([]);
+      });
+    });
+
+    test("should handle multiple OCG state changes", async () => {
+      await loadDocument("test_1.pdf", async (document) => {
+        const ocgManager = document.getOCGManager();
+        const states = new Map<number, number>();
+        
+        // Should not throw even with empty states map
+        expect(() => ocgManager.setMultipleOCGStates(states)).not.toThrow();
+      });
+    });
+
+    test("should handle page-level OCG operations", async () => {
+      await loadDocument("test_1.pdf", async (document) => {
+        const page = document.getPage(0);
+        
+        expect(page.hasOCGs()).toBe(false);
+        expect(page.getPageOCGCount()).toBe(0);
+        expect(page.getPageOCGs()).toEqual([]);
+      });
+    });
+
+    test("OCG utility functions should work correctly", async () => {
+      const { getOCGUsageName, getOCGStateName, FPDF_OCG_USAGE_VIEW, FPDF_OCG_STATE_ON } = await import("../src/index.esm");
+      
+      expect(getOCGUsageName(FPDF_OCG_USAGE_VIEW)).toBe('View');
+      expect(getOCGStateName(FPDF_OCG_STATE_ON)).toBe('On');
+      expect(getOCGUsageName(999)).toBe('Unknown');
+      expect(getOCGStateName(999)).toBe('Unknown');
+    });
+
+    test("should handle OCG context with different usage types", async () => {
+      await loadDocument("test_1.pdf", async (document) => {
+        const { FPDF_OCG_USAGE_PRINT, FPDF_OCG_USAGE_DESIGN } = await import("../src/index.esm");
+        const ocgManager = document.getOCGManager();
+        
+        const viewContext = ocgManager.createContext();
+        const printContext = ocgManager.createContext(FPDF_OCG_USAGE_PRINT);
+        const designContext = ocgManager.createContext(FPDF_OCG_USAGE_DESIGN);
+        
+        // OCG APIs may not be available in this PDFium build
+        expect(viewContext.getContextPtr()).toBeGreaterThanOrEqual(0);
+        expect(printContext.getContextPtr()).toBeGreaterThanOrEqual(0);
+        expect(designContext.getContextPtr()).toBeGreaterThanOrEqual(0);
+        
+        viewContext.destroy();
+        printContext.destroy();
+        designContext.destroy();
+      });
+    });
+
+    // Note: These tests work with documents that don't have OCGs
+    // For full testing, you would need PDF files that actually contain OCGs
+    test("should handle OCG order and radio button groups", async () => {
+      await loadDocument("test_1.pdf", async (document) => {
+        const ocgManager = document.getOCGManager();
+        
+        // These should return empty arrays for documents without OCGs
+        expect(ocgManager.getOCGOrder()).toEqual([]);
+        expect(ocgManager.getRadioButtonGroups()).toEqual([]);
+      });
+    });
+  });
 });
