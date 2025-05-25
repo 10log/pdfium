@@ -21,6 +21,17 @@ export declare type PDFium = {
   _FPDFText_ClosePage: (textPage: number) => void;
   _FPDFText_CountChars: (textPage: number) => number;
   _FPDFText_GetText: (textPage: number, startIndex: number, count: number, buffer: number) => number;
+  _FPDFText_GetUnicode: (textPage: number, index: number) => number;
+  _FPDFText_GetFontSize: (textPage: number, index: number) => number;
+  _FPDFText_GetFontInfo: (textPage: number, index: number, buffer: number, buflen: number, flags: number) => number;
+  _FPDFText_GetFontWeight: (textPage: number, index: number) => number;
+  _FPDFText_GetFillColor: (textPage: number, index: number, R: number, G: number, B: number, A: number) => number;
+  _FPDFText_GetStrokeColor: (textPage: number, index: number, R: number, G: number, B: number, A: number) => number;
+  _FPDFText_GetCharAngle: (textPage: number, index: number) => number;
+  _FPDFText_GetCharBox: (textPage: number, index: number, left: number, right: number, bottom: number, top: number) => number;
+  _FPDFText_GetCharOrigin: (textPage: number, index: number, x: number, y: number) => number;
+  _FPDFText_IsGenerated: (textPage: number, index: number) => number;
+  _FPDFText_IsHyphen: (textPage: number, index: number) => number;
 
   _FPDFBitmap_CreateEx: (width: number, height: number, format: number, ptr: number, stride: number) => number;
   _FPDFBitmap_FillRect: (
@@ -62,6 +73,9 @@ export declare type PDFium = {
     free: (ptr: number) => void;
   };
   HEAPU8: Uint8Array;
+  HEAPF64: Float64Array;
+  HEAP32: Int32Array;
+  HEAPU32: Uint32Array;
 };
 
 export declare type LoadPdfiumOptions = {

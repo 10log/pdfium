@@ -8,6 +8,12 @@ export type {
   PDFiumPageRenderOptions,
   PDFiumPageSize,
   PDFiumPageRender,
+  PDFiumEnhancedTextExtraction,
+  PDFiumTextCharacter,
+  PDFiumTextCharacterBounds,
+  PDFiumTextCharacterOrigin,
+  PDFiumTextCharacterColor,
+  PDFiumTextCharacterFont,
 } from "./page.types.js";
 export {
   PDFiumObjectType,

@@ -2,7 +2,7 @@ import type * as t from "./vendor/pdfium.js";
 
 import { BYTES_PER_PIXEL, FPDFBitmap, FPDFRenderFlag } from "./constants.js";
 import { type PDFiumObject, PDFiumObjectBase } from "./objects.js";
-import type { PDFiumPageRender, PDFiumPageRenderParams } from "./page.types.js";
+import type { PDFiumPageRender, PDFiumPageRenderParams, PDFiumEnhancedTextExtraction, PDFiumTextCharacter } from "./page.types.js";
 import type { PDFiumRenderFunction, PDFiumRenderOptions } from "./types.js";
 import { convertBitmapToImage } from "./utils.js";
 
@@ -80,6 +80,187 @@ export class PDFiumPage {
     } finally {
       this.module._FPDFText_ClosePage(textPage);
     }
+  }
+
+  /**
+   * Extract enhanced text with position, font, and other properties
+   */
+  getEnhancedText(): PDFiumEnhancedTextExtraction {
+    const textPage = this.module._FPDFText_LoadPage(this.pageIdx);
+    if (!textPage) {
+      throw new Error("Failed to load text page");
+    }
+
+    try {
+      const charCount = this.module._FPDFText_CountChars(textPage);
+
+      if (charCount <= 0) {
+        return {
+          text: "",
+          characters: [],
+          charCount: 0,
+        };
+      }
+
+      const characters: PDFiumTextCharacter[] = [];
+      let fullText = "";
+
+      for (let i = 0; i < charCount; i++) {
+        const character = this.getCharacterInfo(textPage, i);
+        characters.push(character);
+        fullText += character.char;
+      }
+
+      return {
+        text: fullText,
+        characters,
+        charCount,
+      };
+    } finally {
+      this.module._FPDFText_ClosePage(textPage);
+    }
+  }
+
+  /**
+   * Get detailed information for a specific character
+   */
+  private getCharacterInfo(textPage: number, index: number): PDFiumTextCharacter {
+    // Get Unicode character
+    const unicode = this.module._FPDFText_GetUnicode(textPage, index);
+    const char = String.fromCharCode(unicode);
+
+    // Get bounding box
+    const leftPtr = this.module.wasmExports.malloc(8);
+    const rightPtr = this.module.wasmExports.malloc(8);
+    const bottomPtr = this.module.wasmExports.malloc(8);
+    const topPtr = this.module.wasmExports.malloc(8);
+
+    let bounds = { left: 0, right: 0, bottom: 0, top: 0 };
+    try {
+      const boundsSuccess = this.module._FPDFText_GetCharBox(textPage, index, leftPtr, rightPtr, bottomPtr, topPtr);
+      if (boundsSuccess) {
+        bounds = {
+          left: this.module.HEAPF64[leftPtr >> 3],
+          right: this.module.HEAPF64[rightPtr >> 3],
+          bottom: this.module.HEAPF64[bottomPtr >> 3],
+          top: this.module.HEAPF64[topPtr >> 3],
+        };
+      }
+    } finally {
+      this.module.wasmExports.free(leftPtr);
+      this.module.wasmExports.free(rightPtr);
+      this.module.wasmExports.free(bottomPtr);
+      this.module.wasmExports.free(topPtr);
+    }
+
+    // Get origin
+    const xPtr = this.module.wasmExports.malloc(8);
+    const yPtr = this.module.wasmExports.malloc(8);
+
+    let origin = { x: 0, y: 0 };
+    try {
+      const originSuccess = this.module._FPDFText_GetCharOrigin(textPage, index, xPtr, yPtr);
+      if (originSuccess) {
+        origin = {
+          x: this.module.HEAPF64[xPtr >> 3],
+          y: this.module.HEAPF64[yPtr >> 3],
+        };
+      }
+    } finally {
+      this.module.wasmExports.free(xPtr);
+      this.module.wasmExports.free(yPtr);
+    }
+
+    // Get font information
+    const fontSize = this.module._FPDFText_GetFontSize(textPage, index);
+    const fontWeight = this.module._FPDFText_GetFontWeight(textPage, index);
+    
+    // Get font name
+    const flagsPtr = this.module.wasmExports.malloc(4);
+    let fontName = "";
+    let fontFlags = 0;
+    
+    try {
+      // First call to get the required buffer size
+      const nameLength = this.module._FPDFText_GetFontInfo(textPage, index, 0, 0, flagsPtr);
+      
+      if (nameLength > 0) {
+        const namePtr = this.module.wasmExports.malloc(nameLength);
+        try {
+          const actualLength = this.module._FPDFText_GetFontInfo(textPage, index, namePtr, nameLength, flagsPtr);
+          if (actualLength > 0) {
+            // Font name is returned in UTF-8
+            const nameBuffer = new Uint8Array(this.module.HEAPU8.buffer, namePtr, actualLength - 1); // -1 to exclude null terminator
+            fontName = new TextDecoder("utf-8").decode(nameBuffer);
+            fontFlags = this.module.HEAP32[flagsPtr >> 2];
+          }
+        } finally {
+          this.module.wasmExports.free(namePtr);
+        }
+      }
+    } finally {
+      this.module.wasmExports.free(flagsPtr);
+    }
+
+    // Get colors
+    const rPtr = this.module.wasmExports.malloc(4);
+    const gPtr = this.module.wasmExports.malloc(4);
+    const bPtr = this.module.wasmExports.malloc(4);
+    const aPtr = this.module.wasmExports.malloc(4);
+
+    let fillColor = { r: 0, g: 0, b: 0, a: 255 };
+    let strokeColor = { r: 0, g: 0, b: 0, a: 255 };
+
+    try {
+      const fillSuccess = this.module._FPDFText_GetFillColor(textPage, index, rPtr, gPtr, bPtr, aPtr);
+      if (fillSuccess) {
+        fillColor = {
+          r: this.module.HEAPU32[rPtr >> 2],
+          g: this.module.HEAPU32[gPtr >> 2],
+          b: this.module.HEAPU32[bPtr >> 2],
+          a: this.module.HEAPU32[aPtr >> 2],
+        };
+      }
+
+      const strokeSuccess = this.module._FPDFText_GetStrokeColor(textPage, index, rPtr, gPtr, bPtr, aPtr);
+      if (strokeSuccess) {
+        strokeColor = {
+          r: this.module.HEAPU32[rPtr >> 2],
+          g: this.module.HEAPU32[gPtr >> 2],
+          b: this.module.HEAPU32[bPtr >> 2],
+          a: this.module.HEAPU32[aPtr >> 2],
+        };
+      }
+    } finally {
+      this.module.wasmExports.free(rPtr);
+      this.module.wasmExports.free(gPtr);
+      this.module.wasmExports.free(bPtr);
+      this.module.wasmExports.free(aPtr);
+    }
+
+    // Get other properties
+    const angle = this.module._FPDFText_GetCharAngle(textPage, index);
+    const isGenerated = this.module._FPDFText_IsGenerated(textPage, index) === 1;
+    const isHyphen = this.module._FPDFText_IsHyphen(textPage, index) === 1;
+
+    return {
+      char,
+      unicode,
+      index,
+      bounds,
+      origin,
+      font: {
+        name: fontName,
+        size: fontSize,
+        weight: fontWeight,
+        flags: fontFlags,
+      },
+      fillColor,
+      strokeColor,
+      angle,
+      isGenerated,
+      isHyphen,
+    };
   }
 
   async render(

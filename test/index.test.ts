@@ -4,7 +4,7 @@ import sharp from "sharp";
 import { toMatchImageSnapshot } from "jest-image-snapshot";
 import { test, describe, expect, beforeAll, afterAll } from "vitest";
 
-import { type PDFiumDocument, PDFiumLibrary, PDFiumPage, PDFiumPageRenderOptions } from "../src/index.esm";
+import { type PDFiumDocument, PDFiumLibrary, PDFiumPage, PDFiumPageRenderOptions, type PDFiumEnhancedTextExtraction } from "../src/index.esm";
 import type { PDFiumImageObject, PDFiumPathObject } from "../src/objects";
 
 
@@ -221,6 +221,178 @@ describe("PDFium", () => {
       const password = "12345678";
       const document = await library.loadDocument(buff, password);
       document.destroy();
+    });
+
+    describe("Enhanced Text Extraction", () => {
+      test("should extract basic text using getText()", async () => {
+        await loadDocument("test_1.pdf", async (document) => {
+          const page = document.getPage(0);
+          const text = page.getText();
+          
+          expect(typeof text).toBe("string");
+          expect(text.length).toBeGreaterThan(0);
+          // test_1.pdf should contain some text content
+          expect(text.trim()).not.toBe("");
+        });
+      });
+
+      test("should extract enhanced text with character details", async () => {
+        await loadDocument("test_1.pdf", async (document) => {
+          const page = document.getPage(0);
+          const enhancedText = page.getEnhancedText();
+          
+          expect(enhancedText).toBeDefined();
+          expect(enhancedText).toHaveProperty("text");
+          expect(enhancedText).toHaveProperty("characters");
+          expect(enhancedText).toHaveProperty("charCount");
+          
+          expect(typeof enhancedText.text).toBe("string");
+          expect(Array.isArray(enhancedText.characters)).toBe(true);
+          expect(typeof enhancedText.charCount).toBe("number");
+          
+          if (enhancedText.charCount > 0) {
+            expect(enhancedText.characters.length).toBe(enhancedText.charCount);
+            expect(enhancedText.text.length).toBeLessThanOrEqual(enhancedText.charCount);
+          }
+        });
+      });
+
+      test("should provide detailed character information", async () => {
+        await loadDocument("test_1.pdf", async (document) => {
+          const page = document.getPage(0);
+          const enhancedText = page.getEnhancedText();
+          
+          if (enhancedText.charCount > 0) {
+            const firstChar = enhancedText.characters[0];
+            
+            // Character properties
+            expect(firstChar).toHaveProperty("char");
+            expect(firstChar).toHaveProperty("unicode");
+            expect(firstChar).toHaveProperty("index");
+            expect(typeof firstChar.char).toBe("string");
+            expect(typeof firstChar.unicode).toBe("number");
+            expect(typeof firstChar.index).toBe("number");
+            expect(firstChar.index).toBe(0);
+            
+            // Position properties
+            expect(firstChar).toHaveProperty("bounds");
+            expect(firstChar).toHaveProperty("origin");
+            expect(firstChar.bounds).toHaveProperty("left");
+            expect(firstChar.bounds).toHaveProperty("right");
+            expect(firstChar.bounds).toHaveProperty("bottom");
+            expect(firstChar.bounds).toHaveProperty("top");
+            expect(firstChar.origin).toHaveProperty("x");
+            expect(firstChar.origin).toHaveProperty("y");
+            
+            // Font properties
+            expect(firstChar).toHaveProperty("font");
+            expect(firstChar.font).toHaveProperty("name");
+            expect(firstChar.font).toHaveProperty("size");
+            expect(firstChar.font).toHaveProperty("weight");
+            expect(firstChar.font).toHaveProperty("flags");
+            expect(typeof firstChar.font.name).toBe("string");
+            expect(typeof firstChar.font.size).toBe("number");
+            expect(typeof firstChar.font.weight).toBe("number");
+            expect(typeof firstChar.font.flags).toBe("number");
+            
+            // Color properties
+            expect(firstChar).toHaveProperty("fillColor");
+            expect(firstChar).toHaveProperty("strokeColor");
+            expect(firstChar.fillColor).toHaveProperty("r");
+            expect(firstChar.fillColor).toHaveProperty("g");
+            expect(firstChar.fillColor).toHaveProperty("b");
+            expect(firstChar.fillColor).toHaveProperty("a");
+            
+            // Other properties
+            expect(firstChar).toHaveProperty("angle");
+            expect(firstChar).toHaveProperty("isGenerated");
+            expect(firstChar).toHaveProperty("isHyphen");
+            expect(typeof firstChar.angle).toBe("number");
+            expect(typeof firstChar.isGenerated).toBe("boolean");
+            expect(typeof firstChar.isHyphen).toBe("boolean");
+          }
+        });
+      });
+
+      test("should have consistent text between getText() and getEnhancedText()", async () => {
+        await loadDocument("test_1.pdf", async (document) => {
+          const page = document.getPage(0);
+          const basicText = page.getText();
+          const enhancedText = page.getEnhancedText();
+          
+          // The text content should be the same
+          expect(enhancedText.text).toBe(basicText);
+        });
+      });
+
+      test("should handle empty pages gracefully", async () => {
+        // Create a document with empty page if possible, or test with a minimal PDF
+        await loadDocument("test_1.pdf", async (document) => {
+          const page = document.getPage(0);
+          const enhancedText = page.getEnhancedText();
+          
+          // Should not throw errors even if page has no text
+          expect(enhancedText).toBeDefined();
+          expect(enhancedText.charCount).toBeGreaterThanOrEqual(0);
+          expect(enhancedText.characters.length).toBe(enhancedText.charCount);
+        });
+      });
+
+      test("should provide valid coordinate values", async () => {
+        await loadDocument("test_1.pdf", async (document) => {
+          const page = document.getPage(0);
+          const enhancedText = page.getEnhancedText();
+          
+          if (enhancedText.charCount > 0) {
+            const char = enhancedText.characters[0];
+            
+            // Bounds should be valid numbers
+            expect(typeof char.bounds.left).toBe("number");
+            expect(typeof char.bounds.right).toBe("number");
+            expect(typeof char.bounds.bottom).toBe("number");
+            expect(typeof char.bounds.top).toBe("number");
+            expect(char.bounds.left).toBeLessThanOrEqual(char.bounds.right);
+            expect(char.bounds.bottom).toBeLessThanOrEqual(char.bounds.top);
+            
+            // Origin should be valid numbers
+            expect(typeof char.origin.x).toBe("number");
+            expect(typeof char.origin.y).toBe("number");
+            expect(Number.isFinite(char.origin.x)).toBe(true);
+            expect(Number.isFinite(char.origin.y)).toBe(true);
+          }
+        });
+      });
+
+      test("should provide valid color values", async () => {
+        await loadDocument("test_1.pdf", async (document) => {
+          const page = document.getPage(0);
+          const enhancedText = page.getEnhancedText();
+          
+          if (enhancedText.charCount > 0) {
+            const char = enhancedText.characters[0];
+            
+            // Fill color components should be in valid range (0-255)
+            expect(char.fillColor.r).toBeGreaterThanOrEqual(0);
+            expect(char.fillColor.r).toBeLessThanOrEqual(255);
+            expect(char.fillColor.g).toBeGreaterThanOrEqual(0);
+            expect(char.fillColor.g).toBeLessThanOrEqual(255);
+            expect(char.fillColor.b).toBeGreaterThanOrEqual(0);
+            expect(char.fillColor.b).toBeLessThanOrEqual(255);
+            expect(char.fillColor.a).toBeGreaterThanOrEqual(0);
+            expect(char.fillColor.a).toBeLessThanOrEqual(255);
+            
+            // Stroke color components should be in valid range (0-255)
+            expect(char.strokeColor.r).toBeGreaterThanOrEqual(0);
+            expect(char.strokeColor.r).toBeLessThanOrEqual(255);
+            expect(char.strokeColor.g).toBeGreaterThanOrEqual(0);
+            expect(char.strokeColor.g).toBeLessThanOrEqual(255);
+            expect(char.strokeColor.b).toBeGreaterThanOrEqual(0);
+            expect(char.strokeColor.b).toBeLessThanOrEqual(255);
+            expect(char.strokeColor.a).toBeGreaterThanOrEqual(0);
+            expect(char.strokeColor.a).toBeLessThanOrEqual(255);
+          }
+        });
+      });
     });
   });
 

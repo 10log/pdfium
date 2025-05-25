@@ -28,3 +28,50 @@ export type PDFiumPageRender = {
   originalWidth: number;
   data: Uint8Array;
 };
+
+// Enhanced text extraction types
+export type PDFiumTextCharacterBounds = {
+  left: number;
+  right: number;
+  bottom: number;
+  top: number;
+};
+
+export type PDFiumTextCharacterOrigin = {
+  x: number;
+  y: number;
+};
+
+export type PDFiumTextCharacterColor = {
+  r: number;
+  g: number;
+  b: number;
+  a: number;
+};
+
+export type PDFiumTextCharacterFont = {
+  name: string;
+  size: number;
+  weight: number;
+  flags: number;
+};
+
+export type PDFiumTextCharacter = {
+  char: string;
+  unicode: number;
+  index: number;
+  bounds: PDFiumTextCharacterBounds;
+  origin: PDFiumTextCharacterOrigin;
+  font: PDFiumTextCharacterFont;
+  fillColor: PDFiumTextCharacterColor;
+  strokeColor: PDFiumTextCharacterColor;
+  angle: number;
+  isGenerated: boolean;
+  isHyphen: boolean;
+};
+
+export type PDFiumEnhancedTextExtraction = {
+  text: string;
+  characters: PDFiumTextCharacter[];
+  charCount: number;
+};
