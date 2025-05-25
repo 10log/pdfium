@@ -2,7 +2,7 @@ import type * as t from "./vendor/pdfium.js";
 
 import { BYTES_PER_PIXEL, FPDFBitmap, FPDFRenderFlag } from "./constants.js";
 import { type PDFiumObject, PDFiumObjectBase } from "./objects.js";
-import type { PDFiumPageRender, PDFiumPageRenderParams, PDFiumEnhancedTextExtraction, PDFiumTextCharacter } from "./page.types.js";
+import type { PDFiumPageRender, PDFiumPageRenderParams, PDFiumEnhancedTextExtraction, PDFiumTextCharacter, PDFiumPageLabel } from "./page.types.js";
 import type { PDFiumRenderFunction, PDFiumRenderOptions } from "./types.js";
 import { convertBitmapToImage } from "./utils.js";
 
@@ -118,6 +118,47 @@ export class PDFiumPage {
       };
     } finally {
       this.module._FPDFText_ClosePage(textPage);
+    }
+  }
+
+  /**
+   * Get the page label/title for this page
+   */
+  getLabel(): PDFiumPageLabel {
+    // First call to get the required buffer size
+    const requiredSize = this.module._FPDF_GetPageLabel(this.documentIdx, this.number, 0, 0);
+    
+    if (requiredSize <= 0) {
+      return {
+        label: "",
+        hasLabel: false,
+      };
+    }
+
+    // Allocate buffer for the label (size includes null terminator)
+    const bufferPtr = this.module.wasmExports.malloc(requiredSize);
+    
+    try {
+      const actualSize = this.module._FPDF_GetPageLabel(this.documentIdx, this.number, bufferPtr, requiredSize);
+      
+      if (actualSize <= 0) {
+        return {
+          label: "",
+          hasLabel: false,
+        };
+      }
+
+      // Page labels are returned in UTF-16LE format
+      // Subtract 2 from actualSize to exclude null terminator (2 bytes for UTF-16LE)
+      const buffer = new Uint8Array(this.module.HEAPU8.buffer, bufferPtr, (actualSize - 2));
+      const label = new TextDecoder("utf-16le").decode(buffer);
+
+      return {
+        label: label,
+        hasLabel: true,
+      };
+    } finally {
+      this.module.wasmExports.free(bufferPtr);
     }
   }
 

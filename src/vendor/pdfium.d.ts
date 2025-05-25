@@ -33,6 +33,9 @@ export declare type PDFium = {
   _FPDFText_IsGenerated: (textPage: number, index: number) => number;
   _FPDFText_IsHyphen: (textPage: number, index: number) => number;
 
+  // Page label extraction API
+  _FPDF_GetPageLabel: (document: number, page_index: number, buffer: number, buflen: number) => number;
+
   _FPDFBitmap_CreateEx: (width: number, height: number, format: number, ptr: number, stride: number) => number;
   _FPDFBitmap_FillRect: (
     bitmap: number,

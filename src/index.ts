@@ -14,6 +14,7 @@ export type {
   PDFiumTextCharacterOrigin,
   PDFiumTextCharacterColor,
   PDFiumTextCharacterFont,
+  PDFiumPageLabel,
 } from "./page.types.js";
 export {
   PDFiumObjectType,

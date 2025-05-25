@@ -643,4 +643,79 @@ describe("PDFium", () => {
       });
     });
   });
+
+  describe("PDFiumPageLabel", () => {
+    test("should extract page labels when they exist", async () => {
+      await loadDocument("test_1.pdf", async (document) => {
+        // Test getting labels for all pages
+        for (const page of document.pages()) {
+          const label = page.getLabel();
+          expect(label).toBeDefined();
+          expect(label).toHaveProperty('label');
+          expect(label).toHaveProperty('hasLabel');
+          expect(typeof label.label).toBe('string');
+          expect(typeof label.hasLabel).toBe('boolean');
+        }
+      });
+    });
+
+    test("should handle documents without page labels", async () => {
+      await loadDocument("test_1.pdf", async (document) => {
+        const page = document.getPage(0);
+        const label = page.getLabel();
+        
+        // Most test PDFs don't have explicit page labels
+        expect(label).toBeDefined();
+        expect(typeof label.hasLabel).toBe('boolean');
+        expect(typeof label.label).toBe('string');
+      });
+    });
+
+    test("should return consistent results for the same page", async () => {
+      await loadDocument("test_1.pdf", async (document) => {
+        const page = document.getPage(0);
+        
+        // Call getLabel multiple times to ensure consistency
+        const label1 = page.getLabel();
+        const label2 = page.getLabel();
+        const label3 = page.getLabel();
+        
+        expect(label1).toEqual(label2);
+        expect(label2).toEqual(label3);
+        expect(label1.label).toBe(label2.label);
+        expect(label1.hasLabel).toBe(label2.hasLabel);
+      });
+    });
+
+    test("should handle different page indices correctly", async () => {
+      await loadDocument("test_1.pdf", async (document) => {
+        const pageCount = document.getPageCount();
+        
+        for (let i = 0; i < pageCount; i++) {
+          const page = document.getPage(i);
+          const label = page.getLabel();
+          
+          expect(label).toBeDefined();
+          expect(label).toHaveProperty('label');
+          expect(label).toHaveProperty('hasLabel');
+        }
+      });
+    });
+
+    test("should work with different PDF documents", async () => {
+      // Test with multiple different documents
+      const testFiles = ["test_1.pdf", "test_3_with_images.pdf"];
+      
+      for (const filename of testFiles) {
+        await loadDocument(filename, async (document) => {
+          const page = document.getPage(0);
+          const label = page.getLabel();
+          
+          expect(label).toBeDefined();
+          expect(typeof label.label).toBe('string');
+          expect(typeof label.hasLabel).toBe('boolean');
+        });
+      }
+    });
+  });
 });

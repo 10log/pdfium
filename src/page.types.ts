@@ -75,3 +75,9 @@ export type PDFiumEnhancedTextExtraction = {
   characters: PDFiumTextCharacter[];
   charCount: number;
 };
+
+// Page label types
+export type PDFiumPageLabel = {
+  label: string;
+  hasLabel: boolean;
+};
