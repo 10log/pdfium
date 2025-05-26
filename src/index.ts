@@ -3,6 +3,7 @@
  */
 export { PDFiumDocument } from "./document.js";
 export { PDFiumPage } from "./page.js";
+export { PDFiumProgressiveRenderer } from "./progressive.js";
 export type {
   PDFiumPageRenderFunction,
   PDFiumPageRenderOptions,
@@ -15,6 +16,9 @@ export type {
   PDFiumTextCharacterColor,
   PDFiumTextCharacterFont,
   PDFiumPageLabel,
+  PDFiumProgressiveRenderOptions,
+  PDFiumProgressiveRenderProgress,
+  PDFiumProgressiveRenderResult,
 } from "./page.types.js";
 export type {
   PDFiumDocumentMetadata,
@@ -36,7 +40,14 @@ export {
   PDFiumFormObject,
   PDFiumObject,
 } from "./objects.js";
-export { FPDFPathSegmentType, FPDFMetadataTag } from "./constants.js";
+export { FPDFPathSegmentType, FPDFMetadataTag, FPDFProgressiveStatus } from "./constants.js";
+
+// Additional progressive rendering types from types.ts
+export type {
+  PDFiumRenderFunction,
+  PDFiumRenderCallback,
+  PDFiumRenderOptions,
+} from "./types.js";
 
 // OCG (Optional Content Groups) exports
 export {

@@ -65,6 +65,22 @@ export declare type PDFium = {
     rotate: number,
     flags: number,
   ) => void;
+
+  // Progressive rendering APIs
+  _FPDF_RenderPageBitmap_Start: (
+    bitmap: number,
+    page: number,
+    start_x: number,
+    start_y: number,
+    size_x: number,
+    size_y: number,
+    rotate: number,
+    flags: number,
+    pause: number,
+  ) => number;
+  _FPDF_RenderPageBitmap_Continue: (bitmap: number, pause: number) => number;
+  _FPDF_RenderPageBitmap_Close: (bitmap: number) => void;
+
   _FPDFBitmap_Destroy: (bitmap: number) => void;
   _FPDFBitmap_GetBuffer: (bitmap: number) => number;
   _FPDFImageObj_GetRenderedBitmap: (document: number, page: number, object: number) => number;

@@ -9,9 +9,12 @@ import type {
   PDFiumPageRender,
   PDFiumPageRenderParams,
   PDFiumTextCharacter,
+  PDFiumProgressiveRenderOptions,
+  PDFiumProgressiveRenderResult,
 } from "./page.types.js";
 import type { PDFiumRenderFunction, PDFiumRenderOptions } from "./types.js";
 import { convertBitmapToImage } from "./utils.js";
+import { PDFiumProgressiveRenderer } from "./progressive.js";
 
 export class PDFiumPage {
   private readonly module: t.PDFium;
@@ -422,35 +425,40 @@ export class PDFiumPage {
    * Get an OCG handle from this page by index
    */
   getPageOCG(index: number): number {
-    try {
-      return this.module._FPDF_GetPageOCG ? this.module._FPDF_GetPageOCG(this.pageIdx, index) : 0;
-    } catch (error) {
-      console.warn("Page OCG API not available in this PDFium build:", error);
-      return 0;
-    }
+    return this.module._FPDF_GetPageOCG(this.pageIdx, index);
   }
 
   /**
-   * Get all OCG handles that are referenced on this page
+   * Render the page progressively with incremental updates
+   * This is useful for large pages or when you need progress feedback
    */
-  getPageOCGs(): number[] {
-    const count = this.getPageOCGCount();
-    const ocgs: number[] = [];
+  async renderProgressive(
+    options: PDFiumProgressiveRenderOptions = {},
+  ): Promise<PDFiumProgressiveRenderResult> {
+    const { width: originalWidth, height: originalHeight } = this.getSize();
 
-    for (let i = 0; i < count; i++) {
-      const ocg = this.getPageOCG(i);
-      if (ocg) {
-        ocgs.push(ocg);
-      }
-    }
+    const renderer = new PDFiumProgressiveRenderer(
+      this.module,
+      this.pageIdx,
+      originalWidth,
+      originalHeight,
+    );
 
-    return ocgs;
+    return await renderer.render(options);
   }
 
   /**
-   * Check if this page has any OCGs (layers)
+   * Create a progressive renderer instance for this page
+   * Allows for more control over the progressive rendering process
    */
-  hasOCGs(): boolean {
-    return this.getPageOCGCount() > 0;
+  createProgressiveRenderer(): PDFiumProgressiveRenderer {
+    const { width: originalWidth, height: originalHeight } = this.getSize();
+
+    return new PDFiumProgressiveRenderer(
+      this.module,
+      this.pageIdx,
+      originalWidth,
+      originalHeight,
+    );
   }
 }

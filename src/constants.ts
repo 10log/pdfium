@@ -98,3 +98,13 @@ export const FPDF_OCG_USAGE_EXPORT = 3;
 export const FPDF_OCG_INTENT_VIEW = "View";
 export const FPDF_OCG_INTENT_DESIGN = "Design";
 export const FPDF_OCG_INTENT_ALL = "All";
+
+// Progressive rendering status constants
+export const FPDFProgressiveStatus = {
+  // Rendering is in progress
+  RENDER_TOBECONTINUED: 0,
+  // Rendering completed successfully
+  RENDER_DONE: 1,
+  // Rendering failed due to error
+  RENDER_FAILED: 2,
+};

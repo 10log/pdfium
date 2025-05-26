@@ -16,6 +16,13 @@ export type PDFiumPageRenderParams = {
     }
 );
 
+// Re-export progressive rendering types for page-specific use
+export type {
+  PDFiumProgressiveRenderOptions,
+  PDFiumProgressiveRenderProgress,
+  PDFiumProgressiveRenderResult,
+} from "./types.js";
+
 export type PDFiumPageSize = {
   width: number;
   height: number;
