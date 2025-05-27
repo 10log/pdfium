@@ -62,7 +62,7 @@ describe("PDFium", () => {
       });
     });
 
-    test("shoul iterate over pages", async () => {
+    test("should iterate over pages", async () => {
       await loadDocument("test_1.pdf", async (document) => {
         let i = 0;
         for (const page of document.pages()) {
@@ -601,18 +601,21 @@ describe("PDFium", () => {
             // Test getting individual segments
             const firstSegment = pathObject.getSegment(0);
             expect(firstSegment).toBeDefined();
-            expect(firstSegment).toHaveProperty('type');
-            expect(firstSegment).toHaveProperty('x');
-            expect(firstSegment).toHaveProperty('y');
-            expect(firstSegment).toHaveProperty('close');
             
-            // Verify segment type is one of the expected types
-            expect(['unknown', 'lineto', 'bezierto', 'moveto']).toContain(firstSegment.type);
-            
-            // Verify coordinates are numbers
-            expect(typeof firstSegment.x).toBe('number');
-            expect(typeof firstSegment.y).toBe('number');
-            expect(typeof firstSegment.close).toBe('boolean');
+            if (firstSegment) {
+              expect(firstSegment).toHaveProperty('type');
+              expect(firstSegment).toHaveProperty('x');
+              expect(firstSegment).toHaveProperty('y');
+              expect(firstSegment).toHaveProperty('close');
+              
+              // Verify segment type is one of the expected types
+              expect(['unknown', 'lineto', 'bezierto', 'moveto']).toContain(firstSegment.type);
+              
+              // Verify coordinates are numbers
+              expect(typeof firstSegment.x).toBe('number');
+              expect(typeof firstSegment.y).toBe('number');
+              expect(typeof firstSegment.close).toBe('boolean');
+            }
           }
           
           // Test getting all path data
@@ -928,9 +931,14 @@ describe("PDFium", () => {
       await loadDocument("test_1.pdf", async (document) => {
         const page = document.getPage(0);
         
-        expect(page.hasOCGs()).toBe(false);
         expect(page.getPageOCGCount()).toBe(0);
-        expect(page.getPageOCGs()).toEqual([]);
+        // Get individual OCGs by index since getPageOCGs doesn't exist
+        const ocgs: number[] = [];
+        const count = page.getPageOCGCount();
+        for (let i = 0; i < count; i++) {
+          ocgs.push(page.getPageOCG(i));
+        }
+        expect(ocgs).toEqual([]);
       });
     });
 

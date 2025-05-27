@@ -38,7 +38,7 @@ async function progressiveRenderingDemo() {
 
     // Demo 2: Progressive rendering with progress tracking
     console.log('\n📈 Demo 2: Progressive Rendering with Progress Tracking');
-    let progressSteps: number[] = [];
+    let progressSteps = [];
     
     const result2 = await page.renderProgressive({
       scale: 3,
